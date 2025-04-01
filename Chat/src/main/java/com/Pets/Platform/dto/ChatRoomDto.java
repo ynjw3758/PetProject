@@ -1,0 +1,26 @@
+package com.Pets.Platform.dto;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChatRoomDto {
+	
+    private UUID uuid;  // UUID
+    
+    private String RoomName;  // 채팅방 이름
+    private String createDate;  // 생성일자
+    private int userCount;  // 사용자 수
+
+}

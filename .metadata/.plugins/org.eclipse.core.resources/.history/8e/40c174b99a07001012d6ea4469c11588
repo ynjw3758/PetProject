@@ -1,0 +1,198 @@
+package com.Pets.Platform.mongo;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
+
+import com.Pets.Platform.dto.ChatUerinfoDto;
+import com.Pets.Platform.entity.ChatMember;
+import com.Pets.Platform.entity.ChatRoom;
+import com.Pets.Platform.entity.ChatUserInfo;
+
+@Service
+public class Chat {
+	
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	
+	@Autowired
+	private MongoTemplate mongo_template;
+	
+	@Autowired
+	private RedisTemplate<String, Object> redisTemplate;
+	
+	
+	public boolean check_room(String uuid) {
+		boolean isCreate=false;
+		
+		
+		
+		return isCreate;
+	}
+	
+	@Async
+	@Transactional
+	public void Insert_Async(ChatRoom room,ChatMember member ,
+			List<ChatUserInfo> all_insert ,List<String> nick_list) {
+		logger.info("memeber :" + member.getMembers());
+		if(all_insert.size() !=0) {
+		 mongo_template.save(room);
+		 mongo_template.save(member);
+		 mongo_template.insertAll(all_insert);
+		 redisTemplate.opsForValue().set(room.getUuid(), nick_list);
+		 
+		 
+		}
+		else {
+			mongo_template.save(room);
+			mongo_template.save(member);
+			redisTemplate.opsForValue().set(room.getUuid(), nick_list);
+		}
+		return ;
+	}
+	
+	public Map<String, Object> Duple_Chat(List<String> list) {
+		Map<String, Object> duple =new HashMap<>();
+		Map<String, Object> duplelist = new HashMap<String, Object>();
+		logger.info("list.size :" + list.size());
+		  Query duple_query = new Query(new Criteria().andOperator(
+			        Criteria.where("Members").all(list),
+			        Criteria.where("Members").size(list.size())
+			));
+		  //Query duple_query = new Query(Criteria.where("Members").in(id_list));
+		  duple = mongo_template.findOne(duple_query, Map.class, "Member"); 
+		  logger.info("중복 체크 결과 :" + duple);
+		return duple;
+	}
+	
+	 
+	public Map<String, Object> Create_Chat(List<Map<String, Object>> list, String name, String manager, 
+			String Img, String NickName) {
+		  Map<String, Object> result = new HashMap<String, Object>();
+		  Map<String, Object> user_info = new HashMap<String, Object>();
+		  Map<String ,Object> myinfo =new HashMap<String, Object>();
+		  Map<String, Object> duplelist = new HashMap<String, Object>();
+		  Map<String, Object> Duple = new HashMap<String, Object>();
+		  
+		  List<Map<String,Object>> copy_list= new ArrayList<>(list);
+		  List<String> uuid_list = new ArrayList<String>();
+		  List<String> id_list= new ArrayList<String>();
+		  List<String> nick_list= new ArrayList<String>();
+		  List<ChatUserInfo> all_insert = new ArrayList<ChatUserInfo>();
+		  boolean isDuple= false;
+		  String uuid = UUID.randomUUID().toString();
+		  myinfo.put("Img", Img);
+		  myinfo.put("Nickname", NickName);
+		  myinfo.put("Userid", manager);
+		  copy_list.add(myinfo);
+		  logger.info("copy :" + copy_list.size());
+		  uuid_list.add(uuid);
+		  for(int i=0; i< copy_list.size(); i++) {
+			  id_list.add(copy_list.get(i).get("Userid").toString());
+			  nick_list.add(copy_list.get(i).get("Nickname").toString());
+		  }
+		  Duple = Duple_Chat(id_list);
+		  
+		  if(Duple == null) {
+			  for(int i=0; i< copy_list.size() ; i++) {
+				  logger.info("아니 왜?" + i);
+					  String userId=copy_list.get(i).get("Userid").toString();
+					  Query find_userinfo = new Query(Criteria.where("user_Id").is(userId));
+					  user_info = mongo_template.findOne(find_userinfo, Map.class, "UserInfo");
+					  if(user_info == null) {//insert
+		  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
+		  						copy_list.get(i).get("Nickname").toString(), "N"
+		  			              );
+		  	                      all_insert.add(info);
+					  }
+					  else {//update
+						  Query updateQuery = new Query(Criteria.where("user_Id").is(userId));
+						  Update update = new Update().addToSet("ChatRoom", uuid);
+						  mongo_template.updateFirst(updateQuery, update, "UserInfo");
+						  
+					  }
+
+			  }
+		  }
+		  else {
+			   logger.info("중복 데이터 존재 : " +Duple );
+			   Map<String, Object> result_data= new HashMap<>();
+			   result_data.put("userlist", list);
+			   result_data.put("roomId", Duple.get("chat_Id"));
+			   result_data.put("roomname", name);
+			   isDuple=true;
+				  result.put("code", 200);
+				  result.put("msg", "중복 채팅방 존재");
+				  result.put("data", result_data);
+				  
+		  }
+		  if(isDuple == false) {
+			  int User_Count= list.size();
+			  String chatname = String.join(",", name);
+			 LocalDateTime createDate = LocalDateTime.now();
+			 ChatRoom room =new ChatRoom();
+			 ChatMember member = new ChatMember();
+			 room.setUserCount(User_Count);
+			 room.setUuid(uuid);
+			 room.setRoomName(chatname);
+			 room.setCreateDate(createDate);
+			 
+			 member.setChat(uuid);
+			 member.setCreateDate(createDate);
+			 member.setMembers(id_list);
+			 logger.info("리스트 :" + id_list);
+			 Insert_Async(room, member,all_insert, nick_list);
+			  result.put("code", 201);
+			  result.put("msg", "채팅방 생성 중");
+			  result.put("Id", uuid);
+			  result.put("Date", createDate);
+			  
+			  return result;
+			  
+		  }
+		  
+
+		  
+
+		  return result;
+	}
+	/* 추 후 필요하면 사용할 것
+	public Map<String, Object> Duple_Room(List<String>my_chat , List<List<String>> people_chat) {
+		Map<String, Object> isDuple=new HashMap<String, Object>();
+		Set<String> myChatSet = new HashSet<>(my_chat);
+
+		Map<String, Integer> dupleCountMap = new HashMap<>(); // 중복된 UUID와 카운트 저장
+		
+	    for (List<String> chatList : people_chat) {
+	        for (String chatUuid : chatList) {
+	            if (myChatSet.contains(chatUuid)) {
+	                // 중복된 UUID 개수 증가
+	                dupleCountMap.put(chatUuid, dupleCountMap.getOrDefault(chatUuid, 0) + 1);
+	            }
+	        }
+	    }
+	    
+	    logger.info("중복 체크 결과 : " + dupleCountMap);
+
+		
+		return isDuple;
+	}
+       */ 
+}

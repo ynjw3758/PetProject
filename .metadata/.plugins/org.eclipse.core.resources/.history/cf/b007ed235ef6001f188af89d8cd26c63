@@ -1,0 +1,12 @@
+package com.Pets.Platform.dto;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public class ChatRoomDto {
+	
+    private UUID uuid;
+    private LocalDateTime createDate;
+    private int userCount;
+
+}
