@@ -1,8 +1,0 @@
-package com.Pets.Platform.config;
-
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class Redis {
-
-}
