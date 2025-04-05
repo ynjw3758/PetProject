@@ -1,0 +1,93 @@
+package com.Pets.Platform.entity;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Data
+@Document(collection = "ChatUserinfo")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChatUserInfo {
+	
+    //@Id
+    //private String id;  // 유저의 UUID (외래키로 사용)
+
+    //@ManyToOne
+    //@JoinColumn(name = "chatroom_uuid", referencedColumnName = "uuid")  // ChatRoom UUID 외래키 참조
+    private List<String> chatRoom;  // 참여한 채팅방 정보
+
+    private String userId;  // 유저 ID
+    private String nickname;  //  닉네임
+    private String img;
+    private String ctid;
+    
+
+    // 모든 필드를 초기화하는 생성자
+    public void ChatUserinfo(List<String> chatRoom, String userId, String nickname, String img, String ctid) {
+        this.chatRoom = chatRoom;
+        this.userId = userId;
+        this.nickname = nickname;
+        this.img = img;
+        this.ctid = ctid;
+    }
+
+    // Getter & Setter
+
+
+    public List<String> getChatRoom() {
+        return chatRoom;
+    }
+
+    public void setChatRoom(List<String> chatRoom) {
+        this.chatRoom = chatRoom;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getImg() {
+        return img;
+    }
+
+    public void setImg(String img) {
+        this.img = img;
+    }
+
+    public String getCtid() {
+        return ctid;
+    }
+
+    public void setCtid(String ctid) {
+        this.ctid = ctid;
+    }
+
+}

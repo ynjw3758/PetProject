@@ -1,0 +1,5 @@
+package com.Pets.Platform.dto;
+
+public class ChatUerinfoDto {
+
+}
