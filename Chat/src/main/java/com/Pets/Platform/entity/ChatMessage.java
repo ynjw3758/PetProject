@@ -1,5 +1,6 @@
 package com.Pets.Platform.entity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -26,23 +27,15 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class ChatMessage {
-    //@Id
-    //@GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;  // 메시지 ID
+	
+	//todo:필요한 컬럼
+	@Id
+	private String ChatId;
+	private String Chat_Content;
+	private LocalDateTime Send_date;
+	private int Readcnt;
+    private String userId;  // 메시지를 보낸 사용자 ID	
 
-    private String message;  // 메시지 내용
-
-    //@ManyToOne
-    //@JoinColumn(name = "chatroom_uuid", referencedColumnName = "uuid")  // 외래키로 UUID 사용
-    private ChatRoom chatRoom;  // ChatRoom UUID를 참조
-    @Field("test")
-    private String userId;  // 메시지를 보낸 사용자 ID
-    private String sendDate;  // 메시지 전송 일자
-
-    @ElementCollection
-    private List<String> readUser;  // 메시지를 읽은 사용자 리스트
-
-    private int rdCount;  // 읽지 않은 메시지 수
 	
 
 }

@@ -28,7 +28,7 @@ public class Controller {
 	
 	@Autowired
 	 private Services chat_Services;
-	
+	/*
 	@GetMapping("/Chat/checkroom")
 	public ResponseEntity<String> Check_CreateRoom(@RequestParam("UUID") String uuid){
 		String result="";
@@ -40,6 +40,22 @@ public class Controller {
 		}
 
 		return ResponseEntity.status(HttpStatus.OK).body(result);
+	}
+	*/
+	@PostMapping("/Chat/Send")
+	public ResponseEntity<Map<String, Object>> SendChat(@RequestBody Map<String, Object> info){
+		Map<String, Object> response = new HashMap<>();
+		logger.info("요청 :" + info);
+		response  = chat_Services.SendChat(info);
+		/*
+		if(response.get("code").equals(400)) {
+			logger.info("not found");
+			
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+		}
+		
+		*/
+		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 	
 	@PostMapping("/Chat/Create")

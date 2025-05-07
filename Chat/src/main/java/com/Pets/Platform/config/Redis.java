@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -17,51 +18,82 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 @Configuration
 @EnableTransactionManagement 
 public class Redis {
-    @Value("${spring.redis.host}")
-    private String host;
+	 private final String host = "localhost";
+	    private final int port = 6379;
 
-    @Value("${spring.redis.port}")
-    private int port;
-    
-    @Value("${spring.redis.database}")
-    private int database; // DB 번호 설정
-    
-    
-    
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        LettuceConnectionFactory factory = new LettuceConnectionFactory(host, port);
-        factory.setDatabase(database);
-        return factory;
-    }
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory());
+	    // 🔹 Redis DB 2번 (채팅방 참여자용)
+	    @Bean
+	    public RedisConnectionFactory redisConnectionFactory2() {
+	        LettuceConnectionFactory factory = new LettuceConnectionFactory(host, port);
+	        factory.setDatabase(2);
+	        factory.afterPropertiesSet(); // 중요
+	        return factory;
+	    }
 
-        // 일반적인 key:value의 경우 시리얼라이저
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        //redisTemplate.setValueSerializer(new StringRedisSerializer());
-        // Hash를 사용할 경우 시리얼라이저
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+	    @Bean(name = "Save_ChatMember")
+	    public RedisTemplate<String, Object> redisTemplate2() {
+	        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+	        redisTemplate.setConnectionFactory(redisConnectionFactory2());
+	        redisTemplate.setKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+	        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+	        redisTemplate.setEnableTransactionSupport(true);
+	        return redisTemplate;
+	    }
 
-        // 모든 경우
-        redisTemplate.setDefaultSerializer(new StringRedisSerializer());
-        redisTemplate.setEnableTransactionSupport(true); 
-        return redisTemplate;
-    }
-    
-    @Bean
-    public StringRedisTemplate stringRedisTemplate(){
-        StringRedisTemplate stringRedisTemplate=new StringRedisTemplate();
-        stringRedisTemplate.setConnectionFactory(redisConnectionFactory());
-        return stringRedisTemplate;
-    }
-    
-    @Bean
-    public PlatformTransactionManager transactionManager() {  // (3)
-        return new JpaTransactionManager();
-    }
+	    // 🔹 Redis DB 4번 (읽음 카운트용)
+	    @Bean
+	    public RedisConnectionFactory redisConnectionFactory4() {
+	        LettuceConnectionFactory factory = new LettuceConnectionFactory(host, port);
+	        factory.setDatabase(4);
+	        factory.afterPropertiesSet();
+	        return factory;
+	    }
+
+	    @Bean(name = "Save_ChatCnt")
+	    public RedisTemplate<String, Object> redisTemplate4() {
+	        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+	        redisTemplate.setConnectionFactory(redisConnectionFactory4());
+	        redisTemplate.setKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+	        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+	        redisTemplate.setEnableTransactionSupport(true);
+	        return redisTemplate;
+	    }
+
+	    // ✅ 기본 redisTemplate는 계속 유지 가능
+	    @Bean
+	    @Primary
+	    public RedisConnectionFactory redisConnectionFactory() {
+	        LettuceConnectionFactory factory = new LettuceConnectionFactory(host, port);
+	        factory.setDatabase(0); // 기본값
+	        factory.afterPropertiesSet();
+	        return factory;
+	    }
+
+	    @Bean
+	    public RedisTemplate<String, Object> redisTemplate() {
+	        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+	        redisTemplate.setConnectionFactory(redisConnectionFactory());
+	        redisTemplate.setKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+	        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+	        redisTemplate.setHashValueSerializer(new StringRedisSerializer());
+	        redisTemplate.setEnableTransactionSupport(true);
+	        return redisTemplate;
+	    }
+
+	    @Bean
+	    public StringRedisTemplate stringRedisTemplate(){
+	        StringRedisTemplate stringRedisTemplate = new StringRedisTemplate();
+	        stringRedisTemplate.setConnectionFactory(redisConnectionFactory());
+	        return stringRedisTemplate;
+	    }
+
+	    @Bean
+	    public PlatformTransactionManager transactionManager() {
+	        return new JpaTransactionManager();
+	    }
 }

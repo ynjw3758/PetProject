@@ -23,6 +23,17 @@ public class Services {
 	private Chat Mongo;
 	
 	
+	
+	public Map<String, Object> SendChat(Map<String, Object> infos){
+		Map<String, Object> data= new HashMap<>();
+		
+		
+		
+		
+		return data;
+	}
+	
+	
 	public boolean checkroom(String uuid) {
 		boolean is_success=false;
 		is_success= Mongo.check_room(uuid);
