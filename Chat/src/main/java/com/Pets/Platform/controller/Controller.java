@@ -42,22 +42,40 @@ public class Controller {
 		return ResponseEntity.status(HttpStatus.OK).body(result);
 	}
 	*/
+	/*
 	@PostMapping("/Chat/Send")
 	public ResponseEntity<Map<String, Object>> SendChat(@RequestBody Map<String, Object> info){
 		Map<String, Object> response = new HashMap<>();
 		logger.info("요청 :" + info);
 		response  = chat_Services.SendChat(info);
-		/*
-		if(response.get("code").equals(400)) {
-			logger.info("not found");
-			
+
+		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+	*/
+	
+	@GetMapping("/Chat/reload")
+	public ResponseEntity<Map<String, Object>>ChatReload(@RequestParam("Id")String Id){
+		Map<String, Object> response = new HashMap<String, Object>();
+		response = chat_Services.Reload(Id);
+		if(response.get("code").equals(404)) {
+			logger.info("데이터가 존재하지 않는다");
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+		}
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+	
+	@GetMapping("/Chat/getFocusList")
+	public ResponseEntity<Map<String, Object>> getChatList(@RequestParam("Id")String Id, @RequestParam("ChatId") String ChatId){
+		Map<String, Object> response = new HashMap<String, Object>();
+		logger.info("아이디 :" + Id , "Chatid" +ChatId );
+		response = chat_Services.FocusChatinfo(Id, ChatId);
+		if(response.get("code").equals(404)) {
+			logger.info("데이터가 존재하지 않는다");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 		}
 		
-		*/
-		return ResponseEntity.status(HttpStatus.OK).body(response);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
-	
 	@PostMapping("/Chat/Create")
 	public ResponseEntity<Map<String, Object>>Create_Room(@RequestBody() Map<String, Object> info ){
 		Map<String, Object> response = new HashMap<String, Object>();

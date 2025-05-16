@@ -2,6 +2,7 @@ package com.Pets.Platform.mongo;
 
 import java.time.LocalDateTime;
 
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
@@ -41,22 +43,91 @@ public class Chat {
 	@Autowired
 	private Redis_Services Redis;
 	
-
 	
 	
-	public void Save_Chatcontent(Map<String, Object> infos) {
+	public List<Map<String, Object>>getChatList(String Id){
+		List<Map> partichat = new ArrayList<>();
+		List<Map<String, Object>>ChatList= new ArrayList<>();
+		Query query = new Query(Criteria.where("user_Id").is(Id))
+			    .limit(10);
+		partichat = mongo_template.find(query, Map.class, "UserInfo"); 
+		for(int i=0; i<partichat.size();i++) {
+			Map<String, Object> ChatInfos =new HashMap<>();
+			Map<String, Object> Member =new HashMap<>();
+			Map<String, Object> Chat_info =new HashMap<>();
+			List<String> roomList = (List<String>) partichat.get(i).get("ChatRoom");
+			for (String chatRoomId : roomList) {
+			    Query member_query = new Query(Criteria.where("chat_Id").is(chatRoomId));
+			    Member = mongo_template.findOne(member_query, Map.class, "Member");
+			    Query room_query = new Query(Criteria.where("uuid").is(chatRoomId));
+			    room_query.fields().include("userCount").include("RoomName");
+			    Chat_info =mongo_template.findOne(room_query, Map.class, "Room");
+			    
+		        Map<String, Object> merged = new HashMap<>();
+		        if (Member != null) merged.putAll(Member);
+		        if (Chat_info != null) merged.putAll(Chat_info);
+			    ChatList.add(merged);
+			}
+			 
+		}
 		
-		
+		return ChatList;
 	}
 	
-	
-	public boolean check_room(String uuid) {
-		boolean isCreate=false;
-		
-		
-		
-		return isCreate;
+	public Map<String ,Object> getReaload(String Id){
+		List<Map<String, Object>> ChatList = new ArrayList<>();
+		Map<String, Object> Total_infos = new HashMap<>();
+		Map<String, Object> infos = new HashMap<>();
+		Map<String, Object> data = new HashMap<>();
+		try {
+			Query query = new Query(Criteria.where("user_Id").is(Id));
+			query.fields().include("user_Id").include("Nickname").include("Img");
+			infos = mongo_template.findOne(query, Map.class, "UserInfo"); 
+			ChatList = getChatList(Id);
+			Total_infos.put("Myinfo", infos);
+			Total_infos.put("ChatList", ChatList);
+			logger.info("infos: " + infos);
+			logger.info("ChatList: " + ChatList);
+			if(!infos.isEmpty() &&ChatList.isEmpty()) {
+				logger.info("채팅 내력이 존재하지 않는다 에러아님");
+				data.put("code", 200);
+				data.put("msg", "empty");
+				data.put("data", Total_infos);
+			}
+			else if(infos.isEmpty() &&ChatList.isEmpty()) {
+				logger.error("모든 데이터가 존재하지 않는다 ");
+				data.put("code", 404);
+				data.put("msg", "데이터가 존재하지 않습니다");
+				data.put("data", "null");
+			}
+			else if(!infos.isEmpty() && !ChatList.isEmpty()) {
+				logger.info("정상 조회");
+				data.put("code", 200);
+				data.put("msg", "empty");
+				data.put("data", Total_infos);
+			}
+		}catch(Exception e) {
+			logger.error("데이터 조회할 때 에러 발생");
+		}
+		logger.info("data : " + data);
+		return data;
 	}
+	
+    public Map<String, Object> getFocusinfos(String Id , String ChatId){
+    	
+    	Map<String, Object>Total_infos= new HashMap<>();
+    	List<Map<String, Object>> ChatList_infos = new ArrayList<>();
+    	List<Map>Chatinfo= new ArrayList<>();
+    	ChatList_infos =getChatList(Id);
+		Query chat_query = new Query(Criteria.where("chat_Id").is(ChatId));
+		Chatinfo = mongo_template.find(chat_query, Map.class, "Message");
+		if(Chatinfo == null) Total_infos.put("ChatInfo", "null");
+		else Total_infos.put("ChatInfo", Chatinfo);
+		Total_infos.put("ChatList", ChatList_infos);
+		logger.info("방 전체 리스트의 유저 정보 :" + Total_infos);
+		
+    	return Total_infos;
+    }
 	
 	@Async
 	@Transactional
@@ -82,13 +153,13 @@ public class Chat {
 	
 	public Map<String, Object> Duple_Chat(List<String> list) {
 		Map<String, Object> duple =new HashMap<>();
-		Map<String, Object> duplelist = new HashMap<String, Object>();
+
+	
 		logger.info("list.size :" + list.size());
 		  Query duple_query = new Query(new Criteria().andOperator(
 			        Criteria.where("Members").all(list),
 			        Criteria.where("Members").size(list.size())
 			));
-		  //Query duple_query = new Query(Criteria.where("Members").in(id_list));
 		  duple = mongo_template.findOne(duple_query, Map.class, "Member"); 
 		  logger.info("중복 체크 결과 :" + duple);
 		return duple;
@@ -96,13 +167,14 @@ public class Chat {
 	
 	 
 	public Map<String, Object> Create_Chat(List<Map<String, Object>> list, String name, String manager, 
-			String Img, String NickName) {
+			String Myprofile, String NickName) {
 		  Map<String, Object> result = new HashMap<String, Object>();
 		  Map<String, Object> user_info = new HashMap<String, Object>();
 		  Map<String ,Object> myinfo =new HashMap<String, Object>();
 		  Map<String, Object> duplelist = new HashMap<String, Object>();
 		  Map<String, Object> Duple = new HashMap<String, Object>();
 		  
+		  List<Map<String,Object>> Member_Listinfos= new ArrayList<>();
 		  List<Map<String,Object>> copy_list= new ArrayList<>(list);
 		  List<String> uuid_list = new ArrayList<String>();
 		  List<String> id_list= new ArrayList<String>();
@@ -110,7 +182,7 @@ public class Chat {
 		  List<ChatUserInfo> all_insert = new ArrayList<ChatUserInfo>();
 		  boolean isDuple= false;
 		  String uuid = UUID.randomUUID().toString();
-		  myinfo.put("Img", Img);
+		  myinfo.put("Img", Myprofile);
 		  myinfo.put("Nickname", NickName);
 		  myinfo.put("Userid", manager);
 		  copy_list.add(myinfo);
@@ -119,7 +191,19 @@ public class Chat {
 		  for(int i=0; i< copy_list.size(); i++) {
 			  id_list.add(copy_list.get(i).get("Userid").toString());
 			  nick_list.add(copy_list.get(i).get("Nickname").toString());
+			  Map<String, Object>infos = new HashMap<>();
+			  infos.put("UserId", copy_list.get(i).get("Userid").toString());
+			  infos.put("Nickname", copy_list.get(i).get("Nickname").toString());
+			  if(copy_list.get(i).get( "Img").equals("/image/baseimg.png")) {
+				  infos.put("Img", "N");
+			  }
+			  else {
+				  infos.put("Img", copy_list.get(i).get("Img").toString());
+			  }
+			  
+			  Member_Listinfos.add(infos);
 		  }
+		  logger.info("멤버 전체 정보 저장 :" + Member_Listinfos);
 		  Duple = Duple_Chat(id_list);//채팅방 중복 체크 
 		  
 		  if(Duple == null) {
@@ -129,10 +213,21 @@ public class Chat {
 					  Query find_userinfo = new Query(Criteria.where("user_Id").is(userId));
 					  user_info = mongo_template.findOne(find_userinfo, Map.class, "UserInfo");
 					  if(user_info == null) {//insert
-		  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
-		  						copy_list.get(i).get("Nickname").toString(), "N"
-		  			              );
-		  	                      all_insert.add(info);
+						 
+						  if(copy_list.get(i).get( "Img").equals("/image/baseimg.png")) {
+			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
+				  						copy_list.get(i).get("Nickname").toString(), "N"
+				  			              );
+			  				 all_insert.add(info);
+						  }
+						  else {
+			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
+				  						copy_list.get(i).get("Nickname").toString(), copy_list.get(i).get("Img").toString()
+				  			              );
+			  				 all_insert.add(info);
+						  }
+
+		  	                     
 					  }
 					  else {//update
 						  Query updateQuery = new Query(Criteria.where("user_Id").is(userId));
@@ -152,6 +247,7 @@ public class Chat {
 				   result_data.put("roomId", Duple.get("chat_Id"));
 				   result_data.put("roomname", name);
 				   result_data.put("isDuplicate", false);
+				   result_data.put("Createdate", Duple.get("CreateDate"));
 					  result.put("code", 200);
 					  result.put("msg", "중복 채팅방 존재");
 					  result.put("data", result_data);
@@ -187,9 +283,9 @@ public class Chat {
 			 
 			 member.setChat(uuid);
 			 member.setCreateDate(createDate);
-			 member.setMembers(id_list);
+			 member.setMembers(Member_Listinfos);
 			 logger.info("리스트 :" + id_list);
-			 //Insert_Async(room, member,all_insert, id_list);
+			 Insert_Async(room, member,all_insert, id_list);
 			  result.put("code", 201);
 			  result.put("msg", "채팅방 생성 중");
 			  result.put("Id", uuid);

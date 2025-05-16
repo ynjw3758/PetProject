@@ -2,6 +2,7 @@ package com.Pets.Platform.entity;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -23,9 +24,9 @@ public class ChatMember {
 	@Field("chat_Id")
 	private String Chat;
 	
-	private List<String> Members;
+	private List<Map<String, Object>> Members;
 	
-    public void ChatMember(List<String> Members, String Chat, LocalDateTime CreateDate) {
+    public void ChatMember(List<Map<String, Object>> Members, String Chat, LocalDateTime CreateDate) {
         this.Members = Members;
         this.Chat = Chat;
         this.CreateDate = CreateDate;
@@ -47,11 +48,11 @@ public class ChatMember {
     	return Chat;
     }
     
-    public void setMembers(List<String> Members) {
+    public void setMembers(List<Map<String, Object>> Members) {
     	this.Members = Members;
     }
     
-    public List<String> getMembers(){
+    public List<Map<String, Object>> getMembers(){
     	return Members;
     }
 }
