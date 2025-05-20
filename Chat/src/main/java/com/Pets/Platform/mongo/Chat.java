@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import org.springframework.scheduling.annotation.Async;
 import com.Pets.Platform.Redis.Redis_Services;
 import com.Pets.Platform.dto.ChatUerinfoDto;
 import com.Pets.Platform.entity.ChatMember;
+import com.Pets.Platform.entity.ChatMessage;
 import com.Pets.Platform.entity.ChatRoom;
 import com.Pets.Platform.entity.ChatUserInfo;
 
@@ -43,6 +46,26 @@ public class Chat {
 	@Autowired
 	private Redis_Services Redis;
 	
+	
+	public Map<String ,Object>getChatInfo(String UserId, String Chatid){
+		Map<String, Object> total_data =new HashMap<>();
+		Map<String, Object> Member =new HashMap<>();
+		logger.info("chatid :" + Chatid);
+		String ChatName="";
+	    Query member_query = new Query(Criteria.where("chat_Id").is(Chatid));
+	    member_query.fields().include("CreateDate").include("Members").exclude("_id");
+	    Member = mongo_template.findOne(member_query, Map.class, "Member");
+	    logger.info("맴버 :" + Member);
+	    Query chat_query = new Query(Criteria.where("uuid").is(Chatid));
+	    chat_query.fields().include("RoomName").exclude("_id");
+	    Document doc= mongo_template.findOne(chat_query, Document.class, "Room");
+	    String roomName = doc != null ? doc.getString("RoomName") : null;
+	    total_data.put("Member", Member);
+	    total_data.put("Name", roomName);
+	    
+		
+		return total_data;
+	}
 	
 	
 	public List<Map<String, Object>>getChatList(String Id){
@@ -114,20 +137,90 @@ public class Chat {
 	}
 	
     public Map<String, Object> getFocusinfos(String Id , String ChatId){
-    	
+    	logger.info("id :" + Id);
     	Map<String, Object>Total_infos= new HashMap<>();
     	List<Map<String, Object>> ChatList_infos = new ArrayList<>();
+    	List<Map> ChatInfos = new ArrayList<>();
+    	Map<String, Object> RoomInfo =new HashMap<>();
     	List<Map>Chatinfo= new ArrayList<>();
+    	Map<String, Object> infos = new HashMap<>();
     	ChatList_infos =getChatList(Id);
+    	RoomInfo = getChatInfo(Id, ChatId);
 		Query chat_query = new Query(Criteria.where("chat_Id").is(ChatId));
 		Chatinfo = mongo_template.find(chat_query, Map.class, "Message");
 		if(Chatinfo == null) Total_infos.put("ChatInfo", "null");
 		else Total_infos.put("ChatInfo", Chatinfo);
+		Query query = new Query(Criteria.where("user_Id").is(Id));
+		query.fields().include("user_Id").include("Nickname").include("Img");
+		infos = mongo_template.findOne(query, Map.class, "UserInfo");
+		Query ChatInfo_query = new Query(Criteria.where("chatId").is(ChatId));
+		ChatInfo_query.fields()
+	    .exclude("inviteIds")
+	    .exclude("rdMember")
+	    .exclude("_id"); // MongoDB 기본 ID도 제거
+		ChatInfos = mongo_template.find(ChatInfo_query,Map.class ,"Message");
+		Map<String, List<Map<String, Object>>> dateGrouped = new LinkedHashMap<>();
+		 
+		for (Map message : ChatInfos) {
+		    String timestamp = (String) message.get("timestamp");
+		    String sendId = (String) message.get("sendId");
+		    // 날짜 추출
+		    String date = timestamp.substring(0, 10);
+
+		    // 내가 보낸 메시지인지 구분
+		    String type = sendId.equals(infos.get("SendId")) ? "mine" : "other";
+		    message.put("type", type);
+
+		    // 날짜별로 메시지 그룹화
+		    dateGrouped.computeIfAbsent(date, k -> new ArrayList<>()).add(message);
+		}
+
+		// 날짜별 그룹을 리스트로 변환
+		List<Map<String, Object>> GroupedChatInfos = new ArrayList<>();
+		for (Map.Entry<String, List<Map<String, Object>>> entry : dateGrouped.entrySet()) {
+		    Map<String, Object> group = new HashMap<>();
+		    group.put("date", entry.getKey());
+		    group.put("messages", entry.getValue());
+		    GroupedChatInfos.add(group);
+		}
+
+		// 전체 결과에 추가
+		Total_infos.put("ChatInfos", GroupedChatInfos); // ✅ 날짜별 + 타입 포함 메시지 리스트
+		Total_infos.put("RoomInfo", RoomInfo);
+		Total_infos.put("Myinfo", infos);
 		Total_infos.put("ChatList", ChatList_infos);
 		logger.info("방 전체 리스트의 유저 정보 :" + Total_infos);
 		
     	return Total_infos;
     }
+    
+	@Async
+	@Transactional
+	public void Insert_ChatInfo(Map<String, Object> infos) {
+		logger.info("채팅 정보 :" + infos);
+		String uuid = UUID.randomUUID().toString();
+		List<String>rdMember = new ArrayList<>();
+		rdMember.add(infos.get("SendId").toString());
+		infos.put("MessageId", uuid);
+		infos.put("ReadMember", rdMember);
+		logger.info("최종 채팅 정보 저장 :" + infos);
+	    ChatMessage Chatinfo = new ChatMessage();
+
+	    Chatinfo.setChatId((String) infos.get("ChatId"));
+	    Chatinfo.setSendId((String) infos.get("SendId"));
+	    Chatinfo.setMessage((String) infos.get("SendMsg"));
+	    Chatinfo.setTimestamp((String) infos.get("SendTime"));
+	    Chatinfo.setProfile((String) infos.get("SendProfile"));
+	    Chatinfo.setNickname((String) infos.get("SendNickname"));
+	    Chatinfo.setInviteIds((List<String>) infos.getOrDefault("InviteIds", new ArrayList<>()));
+	    Chatinfo.setRecount((int) infos.getOrDefault("recount", 0));
+	    Chatinfo.setRdMember(rdMember);
+	    Chatinfo.setMessageId(uuid);
+		mongo_template.save(Chatinfo);
+		
+		
+	}
+    
 	
 	@Async
 	@Transactional
@@ -184,15 +277,15 @@ public class Chat {
 		  String uuid = UUID.randomUUID().toString();
 		  myinfo.put("Img", Myprofile);
 		  myinfo.put("Nickname", NickName);
-		  myinfo.put("Userid", manager);
+		  myinfo.put("UserId", manager);
 		  copy_list.add(myinfo);
 		  logger.info("copy :" + copy_list.size());
 		  uuid_list.add(uuid);
 		  for(int i=0; i< copy_list.size(); i++) {
-			  id_list.add(copy_list.get(i).get("Userid").toString());
+			  id_list.add(copy_list.get(i).get("UserId").toString());
 			  nick_list.add(copy_list.get(i).get("Nickname").toString());
 			  Map<String, Object>infos = new HashMap<>();
-			  infos.put("UserId", copy_list.get(i).get("Userid").toString());
+			  infos.put("UserId", copy_list.get(i).get("UserId").toString());
 			  infos.put("Nickname", copy_list.get(i).get("Nickname").toString());
 			  if(copy_list.get(i).get( "Img").equals("/image/baseimg.png")) {
 				  infos.put("Img", "N");
@@ -209,19 +302,19 @@ public class Chat {
 		  if(Duple == null) {
 			  for(int i=0; i< copy_list.size() ; i++) {
 				  logger.info("아니 왜?" + i);
-					  String userId=copy_list.get(i).get("Userid").toString();
+					  String userId=copy_list.get(i).get("UserId").toString();
 					  Query find_userinfo = new Query(Criteria.where("user_Id").is(userId));
 					  user_info = mongo_template.findOne(find_userinfo, Map.class, "UserInfo");
 					  if(user_info == null) {//insert
 						 
 						  if(copy_list.get(i).get( "Img").equals("/image/baseimg.png")) {
-			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
+			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("UserId").toString(), 
 				  						copy_list.get(i).get("Nickname").toString(), "N"
 				  			              );
 			  				 all_insert.add(info);
 						  }
 						  else {
-			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("Userid").toString(), 
+			  				  ChatUserInfo info = new ChatUserInfo(uuid_list, copy_list.get(i).get("UserId").toString(), 
 				  						copy_list.get(i).get("Nickname").toString(), copy_list.get(i).get("Img").toString()
 				  			              );
 			  				 all_insert.add(info);
@@ -285,7 +378,7 @@ public class Chat {
 			 member.setCreateDate(createDate);
 			 member.setMembers(Member_Listinfos);
 			 logger.info("리스트 :" + id_list);
-			 Insert_Async(room, member,all_insert, id_list);
+			 //Insert_Async(room, member,all_insert, id_list);
 			  result.put("code", 201);
 			  result.put("msg", "채팅방 생성 중");
 			  result.put("Id", uuid);

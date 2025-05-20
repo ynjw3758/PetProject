@@ -51,14 +51,7 @@ public class Services {
 		
 		return data;
 	}
-	/*
-	public boolean checkroom(String uuid) {
-		boolean is_success=false;
-		is_success= Mongo.check_room(uuid);
-		
-		return is_success;
-	}
-	*/
+
 	public Map<String, Object>createRoom(Map<String, Object> infos){
 		Map<String, Object> result = new HashMap<String, Object>();
 		logger.info("채팅 생성 시작 :" + infos);

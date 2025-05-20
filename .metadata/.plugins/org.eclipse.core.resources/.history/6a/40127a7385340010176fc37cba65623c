@@ -1,0 +1,35 @@
+package com.Pets.Platform.Kafka;
+
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@Service
+public class Consumer_Services {
+	
+	
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	
+    @KafkaListener(topics = "SendChat", groupId = "chat-consumer-group")
+    public void listen(String message) {
+        logger.info("📥 수신된 메시지: {}", message);
+
+        // JSON 파싱 (필요 시)
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> chat = mapper.readValue(message, Map.class);
+
+            // TODO: MongoDB 저장, 처리 로직 등
+            System.out.println("✅ 파싱 성공: " + chat);
+        } catch (Exception e) {
+            logger.error("❌ 메시지 파싱 실패", e);
+        }
+    }
+    
+
+}

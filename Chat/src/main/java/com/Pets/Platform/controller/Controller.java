@@ -67,7 +67,7 @@ public class Controller {
 	@GetMapping("/Chat/getFocusList")
 	public ResponseEntity<Map<String, Object>> getChatList(@RequestParam("Id")String Id, @RequestParam("ChatId") String ChatId){
 		Map<String, Object> response = new HashMap<String, Object>();
-		logger.info("아이디 :" + Id , "Chatid" +ChatId );
+		logger.info("아이디 :" + Id + "Chatid" +ChatId );
 		response = chat_Services.FocusChatinfo(Id, ChatId);
 		if(response.get("code").equals(404)) {
 			logger.info("데이터가 존재하지 않는다");
