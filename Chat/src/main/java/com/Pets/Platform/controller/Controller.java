@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.Pets.Platform.service.Services;
 
 
-@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 @RequestMapping("/Pets-social")
 public class Controller {
@@ -52,23 +52,33 @@ public class Controller {
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 	*/
+	@GetMapping("/Chat/chatinfo")
+	public ResponseEntity<Map<String, Object>>getChatInfo(@RequestBody Map<String, Object> info){
+		Map<String, Object> response = new HashMap<String, Object>();
+		logger.info("넘어온 정보 :" + info);
+		response = chat_Services.ChatInfos(info);
+		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+	
 	
 	@GetMapping("/Chat/reload")
-	public ResponseEntity<Map<String, Object>>ChatReload(@RequestParam("Id")String Id){
+	public ResponseEntity<Map<String, Object>>ChatReload(@RequestBody Map<String, Object> Id){
 		Map<String, Object> response = new HashMap<String, Object>();
-		response = chat_Services.Reload(Id);
+		logger.info("Id :" + Id.get("Id").toString());
+		response = chat_Services.Reload(Id.get("Id").toString());
+		logger.info("response :" + response);
 		if(response.get("code").equals(404)) {
-			logger.info("데이터가 존재하지 않는다");
+			logger.info("에러 발생");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 		}
-		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 	
 	@GetMapping("/Chat/getFocusList")
-	public ResponseEntity<Map<String, Object>> getChatList(@RequestParam("Id")String Id, @RequestParam("ChatId") String ChatId){
+	public ResponseEntity<Map<String, Object>> getChatList(@RequestBody Map<String, Object> Id){
 		Map<String, Object> response = new HashMap<String, Object>();
-		logger.info("아이디 :" + Id + "Chatid" +ChatId );
-		response = chat_Services.FocusChatinfo(Id, ChatId);
+		logger.info("아이디 :" + Id.get("Id") + "Chatid" +Id.get("ChatId") );
+		response = chat_Services.FocusChatinfo(Id);
 		if(response.get("code").equals(404)) {
 			logger.info("데이터가 존재하지 않는다");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);

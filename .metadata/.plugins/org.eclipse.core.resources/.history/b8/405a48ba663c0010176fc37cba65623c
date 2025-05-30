@@ -1,0 +1,52 @@
+package com.Pets.Platform.Redis;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.Pets.Platform.entity.ChatRoom;
+
+@Service
+public class Redis_Services {
+	
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	
+	@Autowired
+	@Qualifier("Save_ChatMember") // 참여자 저장용
+	private RedisTemplate<String, Object> ChatMember;
+	
+	@Autowired
+	@Qualifier("Save_ChatCnt") // 참여자 저장용
+	private RedisTemplate<String, Object> ChatCnt;
+	
+	public void CountChat(String MessageId){
+	    try {
+	    	ChatCnt.opsForValue().decrement(MessageId);
+	    } catch (Exception e) {
+	        logger.error("채팅 카운트 감속 실패", e);
+	    }
+	}
+	
+	
+	public void Insert_ChatMember(ChatRoom room , List<String> id_list) {//채팅 참여 맴버 리스트 저장
+	    try {
+	    	ChatMember.opsForSet().add(room.getUuid(), id_list.toArray());
+	    } catch (Exception e) {
+	        logger.error("채팅 멤버 저장 실패", e);
+	    }
+/*
+	    try {
+	        ChatCnt.opsForValue().set(room.getUuid(), id_list.size());
+	    } catch (Exception e) {
+	        logger.error("채팅 카운트 저장 실패", e);
+	    }
+	    */
+	}
+	
+
+}

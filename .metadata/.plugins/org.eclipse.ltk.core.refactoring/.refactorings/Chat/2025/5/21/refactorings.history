@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring accessors="true" comment="Delete 2 elements from project &apos;Chat&apos;&#x0D;&#x0A;- Original project: &apos;Chat&apos;&#x0D;&#x0A;- Original elements:&#x0D;&#x0A;     Chat/src/main/resources/templates&#x0D;&#x0A;     static" description="Delete elements" element1="src/main/resources/static" element2="/src\/main\/resources=/gradle_scope=/main=/=/gradle_used_by_scope=/main,test=/&lt;templates" elements="1" flags="589830" id="org.eclipse.jdt.ui.delete" resources="1" stamp="1747890823219" subPackages="false" version="1.0"/>
+</session>

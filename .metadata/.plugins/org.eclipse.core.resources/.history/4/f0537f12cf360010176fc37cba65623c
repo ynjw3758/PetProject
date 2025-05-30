@@ -1,0 +1,23 @@
+spring.application.name=Chat
+server.port=8089
+
+
+spring.data.mongodb.uri=mongodb://127.0.0.1:27017
+spring.data.mongodb.database = Chat
+
+#Redis
+spring.redis.host =localhost
+spring.redis.port=6379
+spring.cache.type:redis
+spring.redis.database=2
+
+spring:
+  kafka:
+    listener:
+      ack-mode: manual_immediate
+      
+#Psql_user
+spring.datasource.user.hikari.driver-class-namer=org.postgresql.Driver
+spring.datasource.user.hikari.jdbcUrl=jdbc:postgresql://localhost:5432/user_info?serverTimeZone=UTC&CharacterEncoding=UTF-8
+spring.datasource.user.hikari.username=postgres
+spring.datasource.user.hikari.password=YNJW375812!

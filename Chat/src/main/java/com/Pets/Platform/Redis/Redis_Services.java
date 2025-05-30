@@ -24,6 +24,16 @@ public class Redis_Services {
 	@Qualifier("Save_ChatCnt") // 참여자 저장용
 	private RedisTemplate<String, Object> ChatCnt;
 	
+	public void CountChat(String MessageId ,String Cnt){
+	    try {
+	    	int count = Integer.parseInt(Cnt);
+	    	ChatCnt.opsForValue().set(MessageId, count); 
+	    	ChatCnt.opsForValue().decrement(MessageId);
+	    } catch (Exception e) {
+	        logger.error("채팅 카운트 감속 실패", e);
+	    }
+	}
+	
 	
 	public void Insert_ChatMember(ChatRoom room , List<String> id_list) {//채팅 참여 맴버 리스트 저장
 	    try {
@@ -31,12 +41,14 @@ public class Redis_Services {
 	    } catch (Exception e) {
 	        logger.error("채팅 멤버 저장 실패", e);
 	    }
-
+/*
 	    try {
 	        ChatCnt.opsForValue().set(room.getUuid(), id_list.size());
 	    } catch (Exception e) {
 	        logger.error("채팅 카운트 저장 실패", e);
 	    }
+	    */
 	}
+	
 
 }

@@ -25,17 +25,39 @@ public class Services {
 	@Autowired
 	private Chat Mongo;
 	
-	public Map<String, Object> Reload(String Id){
+	public Map<String, Object> ChatInfos(Map<String, Object> info){
 		Map<String, Object> data = new HashMap<>();
-		data = Mongo.getReaload(Id);
-		logger.info("data :" + data);
+		Map<String, Object> chatdata = new HashMap<>();
+		try {
+		chatdata =Mongo.getChatInfos(info);
+		logger.info("조회 결과 :" + chatdata);
+		if(!chatdata.get("MessageInfo").equals("null")) {
+			data.put("code", 200);
+			data.put("msg", "성공");
+			data.put("data", chatdata);
+		}
+		else {
+			data.put("code", 200);
+			data.put("code", "message is not Exist");
+			data.put("data", chatdata);
+		}
+		}catch(Exception e) {
+			logger.error("에러 발생 :" + e);
+		}
+		
 		return data;
 	}
 	
-	public Map<String, Object>FocusChatinfo(String Id, String ChatId){
+	public Map<String, Object> Reload(String Id){
+		Map<String, Object> data = new HashMap<>();
+		data = Mongo.getReaload(Id);
+		return data;
+	}
+	
+	public Map<String, Object>FocusChatinfo( Map<String, Object>Id){
 		Map<String, Object> data = new HashMap<>();
 		Map<String, Object> Total_info = new HashMap<>();
-		Total_info = Mongo.getFocusinfos(Id, ChatId);
+		Total_info = Mongo.getFocusinfos(Id.get("Id").toString(), Id.get("ChatId").toString());
 		logger.info("조회 통합 정보 :" + Total_info);
 		if(Total_info.isEmpty()) {
 			data.put("code", 404);
@@ -43,7 +65,8 @@ public class Services {
 			data.put("data", "null");
 		}
 		else {
-			data.put("code", 201);
+			data.put("code", 200);
+			data.put("succode", "01");
 			data.put("msg", "success");
 			data.put("data", Total_info);
 			
