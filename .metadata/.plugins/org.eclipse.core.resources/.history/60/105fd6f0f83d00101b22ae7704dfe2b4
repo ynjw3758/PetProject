@@ -305,7 +305,7 @@ public class Chat {
     	    retryCount++;
     	    logger.info("재시도 [{}] - 존재 여부: {}", retryCount, isbreak);
     	}
-        
+        /*
     	Query query = new Query();
     	query.addCriteria(Criteria.where("messageId").is(messageId));  // ✅ 단일 메시지 ID 조건
     	Update update = new Update()
@@ -326,7 +326,7 @@ public class Chat {
     	    .set("userId", userId);
 
     	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
-    	
+    	*/
     	
     }
     

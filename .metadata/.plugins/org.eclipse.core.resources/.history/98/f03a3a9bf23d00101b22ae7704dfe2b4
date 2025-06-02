@@ -54,7 +54,7 @@ public class Consumer_Services {
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> chat = mapper.readValue(record.value(), Map.class);
             ack.acknowledge();
-            logger.info("RealTimeRead chat 변환 :" + chat);
+            logger.info("read 변환 :" + chat);
             
             Mongo.RealTimeRead(chat);
         } catch (Exception e) {

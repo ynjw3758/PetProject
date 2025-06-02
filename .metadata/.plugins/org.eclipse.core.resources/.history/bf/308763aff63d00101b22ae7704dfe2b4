@@ -287,25 +287,19 @@ public class Chat {
     	String chatId = infos.get("ChatId").toString();
     	boolean isdata= false;
     	boolean isbreak=false;
-    	int retryCount = 0;
-    	int maxRetries = 20; // 최대 20번 (예: 2초까지 기다림)
-    	int delay = 100; // 100ms 간격
+    	Query query = new Query();
+    	query.addCriteria(Criteria.where("chatId").is(chatId)
+    	    .and("messageId").is(messageId)
+    	    .and("sendId").is(userId));
 
-    	while (!isbreak && retryCount < maxRetries) {
-    	    try {
-				Thread.sleep(delay);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	Query query = new Query();
-        	query.addCriteria(Criteria.where("chatId").is(chatId)
-        	    .and("messageId").is(messageId));
-    	    isbreak = mongo_template.exists(query, "Message");
-    	    retryCount++;
-    	    logger.info("재시도 [{}] - 존재 여부: {}", retryCount, isbreak);
+    	isbreak = mongo_template.exists(query, "Message");  // "Message"는 컬렉션 이름
+    	logger.info("있냐? :" + isbreak);
+    	while(!isbreak) {
+    		 logger.info("루프 진입");
+    	    	isbreak = mongo_template.exists(query, "Message");  // "Message"는 컬렉션 이름
+    	    	logger.info("있냐? :" + isbreak);
     	}
-        
+        /*
     	Query query = new Query();
     	query.addCriteria(Criteria.where("messageId").is(messageId));  // ✅ 단일 메시지 ID 조건
     	Update update = new Update()
@@ -326,7 +320,7 @@ public class Chat {
     	    .set("userId", userId);
 
     	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
-    	
+    	*/
     	
     }
     
@@ -364,6 +358,7 @@ public class Chat {
 		String uuid = UUID.randomUUID().toString();
 		List<String>rdMember = new ArrayList<>();
 		rdMember.add(infos.get("SendId").toString());
+		infos.put("MessageId", uuid);
 		infos.put("ReadMember", rdMember);
 		logger.info("최종 채팅 정보 저장 :" + infos);
 	    ChatMessage Chatinfo = new ChatMessage();

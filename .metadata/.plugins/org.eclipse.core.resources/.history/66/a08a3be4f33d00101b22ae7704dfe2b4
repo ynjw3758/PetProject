@@ -282,30 +282,9 @@ public class Chat {
     @Transactional
     public void RealTimeRead(Map<String, Object> infos) {
     	logger.info("실시간 채틱 읽음 처리 : " +infos );
-    	String messageId = infos.get("MessageId").toString();
+    	String messageId = infos.get("messageId").toString();
     	String userId = infos.get("UserId").toString();
-    	String chatId = infos.get("ChatId").toString();
-    	boolean isdata= false;
-    	boolean isbreak=false;
-    	int retryCount = 0;
-    	int maxRetries = 20; // 최대 20번 (예: 2초까지 기다림)
-    	int delay = 100; // 100ms 간격
 
-    	while (!isbreak && retryCount < maxRetries) {
-    	    try {
-				Thread.sleep(delay);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	Query query = new Query();
-        	query.addCriteria(Criteria.where("chatId").is(chatId)
-        	    .and("messageId").is(messageId));
-    	    isbreak = mongo_template.exists(query, "Message");
-    	    retryCount++;
-    	    logger.info("재시도 [{}] - 존재 여부: {}", retryCount, isbreak);
-    	}
-        
     	Query query = new Query();
     	query.addCriteria(Criteria.where("messageId").is(messageId));  // ✅ 단일 메시지 ID 조건
     	Update update = new Update()
@@ -313,21 +292,6 @@ public class Chat {
     	    .inc("recount", -1);  // ⚠️ recount는 음수 방지 고려 가능
 
     	mongo_template.updateFirst(query, update, "Message");
-    	
-    	// 2. 마지막 읽은 메시지 저장 or 갱신
-    	Query lastReadQuery = new Query();
-    	lastReadQuery.addCriteria(Criteria.where("chatId").is(chatId)
-    	    .and("userId").is(userId));
-
-    	Update lastReadUpdate = new Update()
-    	    .set("messageId", messageId)
-    	    .set("lastTime", infos.get("LastTime"))
-    	    .set("chatId", chatId)
-    	    .set("userId", userId);
-
-    	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
-    	
-    	
     }
     
 	@Async
@@ -355,6 +319,17 @@ public class Chat {
 	        mongo_template.updateMulti(query, update, "Message");
 
 	    }
+		
+		/*
+		
+	    Query query = new Query(Criteria.where("chatId").is(infos.get("ChatId")).and("messageId").is(infos.get("MessageId").toString()));
+
+	    Update update = new Update()
+	        .inc("recount", 1) // ✅ 읽음 카운터 +1
+	        .addToSet("rdMember", infos.get("UserId").toString()); // ✅ 중복 없이 배열에 추가
+
+	    mongo_template.updateFirst(query, update, "Message"); // 컬렉션 이름 주의
+		*/
 	}
     
 	@Async
@@ -364,6 +339,7 @@ public class Chat {
 		String uuid = UUID.randomUUID().toString();
 		List<String>rdMember = new ArrayList<>();
 		rdMember.add(infos.get("SendId").toString());
+		infos.put("MessageId", uuid);
 		infos.put("ReadMember", rdMember);
 		logger.info("최종 채팅 정보 저장 :" + infos);
 	    ChatMessage Chatinfo = new ChatMessage();

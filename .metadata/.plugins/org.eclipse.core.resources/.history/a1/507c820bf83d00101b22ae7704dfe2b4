@@ -278,7 +278,7 @@ public class Chat {
     }
     
     
-    @Async
+    //@Async
     @Transactional
     public void RealTimeRead(Map<String, Object> infos) {
     	logger.info("실시간 채틱 읽음 처리 : " +infos );
@@ -300,12 +300,13 @@ public class Chat {
 			}
         	Query query = new Query();
         	query.addCriteria(Criteria.where("chatId").is(chatId)
-        	    .and("messageId").is(messageId));
+        	    .and("messageId").is(messageId)
+        	    .and("sendId").is(userId));
     	    isbreak = mongo_template.exists(query, "Message");
     	    retryCount++;
     	    logger.info("재시도 [{}] - 존재 여부: {}", retryCount, isbreak);
     	}
-        
+        /*
     	Query query = new Query();
     	query.addCriteria(Criteria.where("messageId").is(messageId));  // ✅ 단일 메시지 ID 조건
     	Update update = new Update()
@@ -326,7 +327,7 @@ public class Chat {
     	    .set("userId", userId);
 
     	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
-    	
+    	*/
     	
     }
     
@@ -357,7 +358,7 @@ public class Chat {
 	    }
 	}
     
-	@Async
+	//@Async
 	@Transactional
 	public void Insert_ChatInfo(Map<String, Object> infos) {
 		logger.info("채팅 정보 :" + infos);

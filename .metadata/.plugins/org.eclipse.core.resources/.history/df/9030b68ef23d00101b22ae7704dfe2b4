@@ -12,20 +12,16 @@ import org.springframework.stereotype.Service;
 
 import com.Pets.Platform.Redis.Redis_Services;
 import com.Pets.Platform.mongo.Chat;
-import com.Pets.Platform.service.Services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class Consumer_Services {
 	
-
+	@Autowired
 	private Chat Mongo;
-	private Redis_Services Redis;
 	
-	public Consumer_Services(Chat Mongo ,Redis_Services Redis) {
-		this.Mongo = Mongo;
-		this.Redis = Redis;
-	}
+	@Autowired
+	private Redis_Services Redis;
 	
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 	
@@ -41,22 +37,6 @@ public class Consumer_Services {
             Redis.CountChat(chat.get("MessageId").toString() , chat.get("ReCount").toString());
             Mongo.Insert_ChatInfo(chat);
             
-        } catch (Exception e) {
-            logger.error("❌ 메시지 파싱 실패", e);
-        }	
-    }
-    
-    @KafkaListener(topics = "RealTimeRead", groupId = "RealTime-Read-Consumer")
-    public void RealTimeReadChat(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        logger.info("읽음 :" + record.value());
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> chat = mapper.readValue(record.value(), Map.class);
-            ack.acknowledge();
-            logger.info("RealTimeRead chat 변환 :" + chat);
-            
-            Mongo.RealTimeRead(chat);
         } catch (Exception e) {
             logger.error("❌ 메시지 파싱 실패", e);
         }	

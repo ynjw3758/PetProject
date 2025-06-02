@@ -1,5 +1,0 @@
-package com.Pets.Platform.mapper;
-
-public interface UserInfo {
-
-}
