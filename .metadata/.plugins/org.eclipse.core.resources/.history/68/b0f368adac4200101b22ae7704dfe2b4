@@ -355,18 +355,6 @@ public class Chat {
 	        mongo_template.updateMulti(query, update, "Message");
 
 	    }
-	    int lastindex = MessageId.size()-1;
-    	Query lastReadQuery = new Query();
-    	lastReadQuery.addCriteria(Criteria.where("chatId").is(infos.get("ChatId").toString())
-    	    .and("userId").is(infos.get("UserId").toString()));
-
-    	Update lastReadUpdate = new Update()
-    	    .set("messageId", MessageId.get(lastindex))
-    	    .set("lastTime", infos.get("LastTime"))
-    	    .set("chatId", infos.get("ChatId").toString())
-    	    .set("userId", infos.get("UserId").toString());
-
-    	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
 	}
     
 	@Async
@@ -399,7 +387,7 @@ public class Chat {
 
     	Update lastReadUpdate = new Update()
     	    .set("messageId", infos.get("MessageId").toString())
-    	    .set("lastTime", infos.get("SendTime"))
+    	    .set("lastTime", infos.get("LastTime"))
     	    .set("chatId", infos.get("ChatId").toString())
     	    .set("userId", infos.get("SendId").toString());
 

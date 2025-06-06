@@ -305,7 +305,7 @@ public class Chat {
     	    retryCount++;
     	    logger.info("재시도 [{}] - 존재 여부: {}", retryCount, isbreak);
     	}
-        
+        /*
     	Query query = new Query();
     	query.addCriteria(Criteria.where("messageId").is(messageId));  // ✅ 단일 메시지 ID 조건
     	Update update = new Update()
@@ -313,7 +313,7 @@ public class Chat {
     	    .inc("recount", -1);  // ⚠️ recount는 음수 방지 고려 가능
 
     	mongo_template.updateFirst(query, update, "Message");
-    	
+    	*/
     	// 2. 마지막 읽은 메시지 저장 or 갱신
     	Query lastReadQuery = new Query();
     	lastReadQuery.addCriteria(Criteria.where("chatId").is(chatId)
@@ -355,18 +355,6 @@ public class Chat {
 	        mongo_template.updateMulti(query, update, "Message");
 
 	    }
-	    int lastindex = MessageId.size()-1;
-    	Query lastReadQuery = new Query();
-    	lastReadQuery.addCriteria(Criteria.where("chatId").is(infos.get("ChatId").toString())
-    	    .and("userId").is(infos.get("UserId").toString()));
-
-    	Update lastReadUpdate = new Update()
-    	    .set("messageId", MessageId.get(lastindex))
-    	    .set("lastTime", infos.get("LastTime"))
-    	    .set("chatId", infos.get("ChatId").toString())
-    	    .set("userId", infos.get("UserId").toString());
-
-    	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
 	}
     
 	@Async
@@ -376,7 +364,6 @@ public class Chat {
 		String uuid = UUID.randomUUID().toString();
 		List<String>rdMember = new ArrayList<>();
 		rdMember.add(infos.get("SendId").toString());
-		try {
 		infos.put("ReadMember", rdMember);
 		logger.info("최종 채팅 정보 저장 :" + infos);
 	    ChatMessage Chatinfo = new ChatMessage();
@@ -392,21 +379,6 @@ public class Chat {
 	    Chatinfo.setRdMember(rdMember);
 	    Chatinfo.setMessageId(infos.get("MessageId").toString());
 		mongo_template.save(Chatinfo);
-		
-    	Query lastReadQuery = new Query();
-    	lastReadQuery.addCriteria(Criteria.where("chatId").is(infos.get("ChatId").toString())
-    	    .and("userId").is(infos.get("SendId").toString()));
-
-    	Update lastReadUpdate = new Update()
-    	    .set("messageId", infos.get("MessageId").toString())
-    	    .set("lastTime", infos.get("SendTime"))
-    	    .set("chatId", infos.get("ChatId").toString())
-    	    .set("userId", infos.get("SendId").toString());
-
-    	mongo_template.upsert(lastReadQuery, lastReadUpdate, "LastChatRead");
-		}catch(Exception e) {
-			logger.error("에러 발생 :" + e);
-		}
 		
 		
 	}
